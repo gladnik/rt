@@ -47,6 +47,10 @@ func ping(w http.ResponseWriter, _ *http.Request) {
 }
 
 func launch(w http.ResponseWriter, r *http.Request) {
+	if (r.Method != http.MethodPost) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 	var launch Launch
 	err := json.NewDecoder(r.Body).Decode(&launch)
 	if err != nil {
@@ -58,6 +62,10 @@ func launch(w http.ResponseWriter, r *http.Request) {
 }
 
 func terminate(w http.ResponseWriter, r *http.Request) {
+	if (r.Method != http.MethodPut) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 	var uuids []string
 	err := json.NewDecoder(r.Body).Decode(&uuids)
 	if err != nil {
