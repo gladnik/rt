@@ -2,16 +2,16 @@ package main
 
 import (
 	"flag"
-	"net/http"
-	"log"
 	"github.com/aerokube/rt/api"
+	"log"
+	"net/http"
 	"os"
-	"syscall"
 	"os/signal"
+	"syscall"
 )
 
 var (
-	listen   string
+	listen string
 )
 
 func init() {

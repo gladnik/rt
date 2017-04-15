@@ -3,10 +3,12 @@ package api
 func ConsumeLaunches(exit chan bool) {
 	for {
 		select {
-		case <-exit: return
-		case launch := <-launchesQueue: {
-			launchImpl(&launch)
-		}
+		case <-exit:
+			return
+		case launch := <-launchesQueue:
+			{
+				launchImpl(&launch)
+			}
 		}
 	}
 }
@@ -18,10 +20,12 @@ func launchImpl(launch *Launch) {
 func ConsumeTerminates(exit chan bool) {
 	for {
 		select {
-		case <-exit: return
-		case testCaseId := <-terminateQueue: {
-			terminateImpl(testCaseId)
-		}
+		case <-exit:
+			return
+		case testCaseId := <-terminateQueue:
+			{
+				terminateImpl(testCaseId)
+			}
 		}
 	}
 }

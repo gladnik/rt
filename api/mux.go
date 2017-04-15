@@ -1,11 +1,11 @@
 package api
 
 import (
-	"net/http"
-	"math"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
-	"encoding/json"
+	"math"
+	"net/http"
 )
 
 /*
@@ -16,14 +16,14 @@ WS /events
 PUT /terminate
 GET /status
 
- */
+*/
 
 const (
-	pingPath        = "/ping"
-	launchPath      = "/launch"
-	terminatePath   = "/terminate"
-	eventsPath      = "/events"
-	messageType = 19
+	pingPath      = "/ping"
+	launchPath    = "/launch"
+	terminatePath = "/terminate"
+	eventsPath    = "/events"
+	messageType   = 19
 )
 
 func Mux(exit chan bool) http.Handler {
@@ -36,10 +36,10 @@ func Mux(exit chan bool) http.Handler {
 }
 
 var (
-	launchesQueue = make(chan Launch, math.MaxUint32)
+	launchesQueue  = make(chan Launch, math.MaxUint32)
 	terminateQueue = make(chan string, math.MaxUint32)
-	eventsQueue = make(chan Event, math.MaxUint32)
-	upgrader = websocket.Upgrader{}
+	eventsQueue    = make(chan Event, math.MaxUint32)
+	upgrader       = websocket.Upgrader{}
 )
 
 func ping(w http.ResponseWriter, _ *http.Request) {
@@ -49,7 +49,7 @@ func ping(w http.ResponseWriter, _ *http.Request) {
 func launch(w http.ResponseWriter, r *http.Request) {
 	var launch Launch
 	err := json.NewDecoder(r.Body).Decode(&launch)
-	if (err != nil) {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("A launch object is expected"))
 		return
@@ -60,7 +60,7 @@ func launch(w http.ResponseWriter, r *http.Request) {
 func terminate(w http.ResponseWriter, r *http.Request) {
 	var uuids []string
 	err := json.NewDecoder(r.Body).Decode(&uuids)
-	if (err != nil) {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("An array or test case IDs is expected"))
 		return
@@ -80,19 +80,21 @@ func events(exit chan bool) func(http.ResponseWriter, *http.Request) {
 		defer c.Close()
 		for {
 			select {
-			case <-exit: return
-			case event := <-eventsQueue: {
-				data, err := json.Marshal(event)
-				if err != nil {
-					log.Printf("Event serialization error: %v\n", err)
-					break
+			case <-exit:
+				return
+			case event := <-eventsQueue:
+				{
+					data, err := json.Marshal(event)
+					if err != nil {
+						log.Printf("Event serialization error: %v\n", err)
+						break
+					}
+					err = c.WriteMessage(messageType, data)
+					if err != nil {
+						log.Printf("Websocket output error: %v\n", err)
+						break
+					}
 				}
-				err = c.WriteMessage(messageType, data)
-				if err != nil {
-					log.Printf("Websocket output error: %v\n", err)
-					break
-				}
-			}
 			}
 		}
 	}

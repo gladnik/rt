@@ -48,14 +48,14 @@ const (
 )
 
 type TestCaseLaunch struct {
-	Id       string     `json:"id"`
-	TestCase *TestCase  `json:"testcase"`
-	State    int        `json:"state"`
+	Id       string    `json:"id"`
+	TestCase *TestCase `json:"testcase"`
+	State    int       `json:"state"`
 }
 
 type Event struct {
 	Type int
-	Id string
+	Id   string
 }
 
 type LaunchEvent struct {
