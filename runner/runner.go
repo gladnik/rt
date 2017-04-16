@@ -28,6 +28,7 @@ const (
 
 func init() {
 	flag.StringVar(&dataDir, "data-dir", "/data", "directory to output data to")
+	flag.StringVar(&testCaseName, "test-case", "", "test case name")
 	flag.Parse()
 }
 
@@ -37,6 +38,10 @@ func main() {
 		log.Printf("Invalid data directory: %v\n", err)
 		os.Exit(errorCode)
 	} 
+	if (testCaseName == "") {
+		log.Println("Test case name can not be empty")
+		os.Exit(errorCode)
+	}
 	execTests(dataDir, testCaseName)
 	sig := make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
