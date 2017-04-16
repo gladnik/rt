@@ -11,7 +11,7 @@ import (
 /*
 
 GET /ping
-POST /launch
+POST /launch -> {"id": "<uuid>", "test-cases": {"test-case-1": "id1", "test-case-2": "id2", ...}}
 WS /events
 PUT /terminate
 GET /status
