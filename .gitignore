@@ -1,4 +1,5 @@
 .idea
 *.iml
 rt
+runner/runner
 coverage.*
