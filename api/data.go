@@ -16,29 +16,40 @@ type Artifact struct {
 
 // Main execution unit
 type TestCase struct {
-	Id       string    `json:"id"`
-	Name     string    `json:"name"`
+	Id       string   `json:"id"`
+	Name     string   `json:"name"`
 	Artifact Artifact `json:"artifact"`
-	Tags     []string  `json:"tags"` // Suite name is an automatically added tag
+	Tags     []string `json:"tags"` // Suite name is an automatically added tag
 }
 
 // A set of test cases launched in the same request
 type Launch struct {
-	Id string `json:"id"`
+	Id         string     `json:"id"`
+	Type       string     `json:"type"` //I.e. which technology is being used
 	TestCases  []TestCase `json:"testcases"`
 	Properties []Property `json:"properties"`
 }
 
+// Config file struct
+type ConfigFile map[string]Config
+
+type Config struct {
+	Image   string            `json:"image"`
+	DataDir string            `json:"dataDir"`
+	Tmpfs   map[string]string `json:"tmpfs"`
+}
+
+// Events
 const (
-	LAUNCH_STARTED = iota
-	LAUNCH_FINISHED
-	TEST_CASE_STARTED
-	TEST_CASE_PASSED
-	TEST_CASE_FAILED
-	TEST_CASE_REVOKED
+	LaunchStarted   = "launch_started"
+	LaunchFinished  = "launch_finished"
+	TestCaseStarted = "test_case_started"
+	TestCasePassed  = "test_case_finished"
+	TestCaseFailed  = "test_case_failed"
+	TestCaseRevoked = "test_case_revoked"
 )
 
 type Event struct {
-	Type int
-	Id   string // Test case or launch ID
+	Type string
+	Id   string // Test case ID or launch ID
 }

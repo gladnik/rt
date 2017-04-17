@@ -2,24 +2,24 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
-	"syscall"
-	"flag"
-	"fmt"
 	"path"
+	"syscall"
 	"text/template"
-	"encoding/json"
 )
 
 var (
-	dataDir string
-	templateFile string
-	rawBuildData string
-	buildFile string
+	dataDir         string
+	templateFile    string
+	rawBuildData    string
+	buildFile       string
 	runningCommands []int
 )
 
@@ -28,7 +28,7 @@ const (
 	failedCode
 	terminatedCode
 	errorCode
-	
+
 	testCaseNameKey = "testCaseName"
 )
 
@@ -42,14 +42,14 @@ func init() {
 
 func main() {
 	err := chDir(dataDir)
-	if (err != nil) {
+	if err != nil {
 		log.Printf("Invalid data directory: %v\n", err)
 		os.Exit(errorCode)
 	}
 
-	var buildData map[string] string
+	var buildData map[string]string
 	err = json.Unmarshal([]byte(rawBuildData), &buildData)
-	if (err != nil) {
+	if err != nil {
 		log.Printf("Failed to parse template data: %v\n", err)
 		os.Exit(errorCode)
 	}
@@ -58,9 +58,9 @@ func main() {
 		log.Println("Test case name can not be empty")
 		os.Exit(errorCode)
 	}
-	if (templateFile != "" && buildFile != "") {
+	if templateFile != "" && buildFile != "" {
 		err = generateBuildFile(templateFile, rawBuildData, buildFile)
-		if (err != nil) {
+		if err != nil {
 			log.Printf("Can not obtain build file: %v\n", err)
 			os.Exit(errorCode)
 		}
