@@ -30,15 +30,6 @@ type Launch struct {
 	Properties []Property `json:"properties"`
 }
 
-// Config file struct
-type ConfigFile map[string]Config
-
-type Config struct {
-	Image   string            `json:"image"`
-	DataDir string            `json:"dataDir"`
-	Tmpfs   map[string]string `json:"tmpfs"`
-}
-
 // Events
 const (
 	LaunchStarted   = "launch_started"
