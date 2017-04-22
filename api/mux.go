@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"github.com/aerokube/rt/event"
 )
 
 /*
@@ -38,7 +39,7 @@ func Mux(exit chan bool) http.Handler {
 var (
 	launchesQueue  = make(chan Launch, math.MaxUint32)
 	terminateQueue = make(chan string, math.MaxUint32)
-	eventsQueue    = make(chan Event, math.MaxUint32)
+	eventBus = event.NewEventBus()
 	upgrader       = websocket.Upgrader{}
 )
 
@@ -90,9 +91,9 @@ func events(exit chan bool) func(http.ResponseWriter, *http.Request) {
 			select {
 			case <-exit:
 				return
-			case event := <-eventsQueue:
+			case evt := <-eventBus.Events():
 				{
-					data, err := json.Marshal(event)
+					data, err := json.Marshal(evt)
 					if err != nil {
 						log.Printf("Event serialization error: %v\n", err)
 						break

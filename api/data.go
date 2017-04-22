@@ -29,18 +29,3 @@ type Launch struct {
 	TestCases  []TestCase `json:"testcases"`
 	Properties []Property `json:"properties"`
 }
-
-// Events
-const (
-	LaunchStarted   = "launch_started"
-	LaunchFinished  = "launch_finished"
-	TestCaseStarted = "test_case_started"
-	TestCasePassed  = "test_case_finished"
-	TestCaseFailed  = "test_case_failed"
-	TestCaseRevoked = "test_case_revoked"
-)
-
-type Event struct {
-	Type string
-	Id   string // Test case ID or launch ID
-}

@@ -5,6 +5,8 @@ import (
 	"github.com/aerokube/rt/service"
 	"log"
 	"sync"
+	"time"
+	"github.com/aerokube/rt/event"
 )
 
 var (
@@ -29,6 +31,12 @@ func (t *TestCases) Put(testCaseId string, tc *RunningTestCase) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.testCases[testCaseId] = tc
+}
+
+func (t *TestCases) Delete(testCaseId string) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	delete(t.testCases, testCaseId)
 }
 
 type RunningTestCase struct {
@@ -56,14 +64,19 @@ func ConsumeLaunches(config *config.Config, exit chan bool) {
 
 func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 	containerType := launch.Type
+	launchId := launch.Id
+	wg := sync.WaitGroup{}
+	log.Printf("[LAUNCH_STARTED] [%s] [%s]\n", launchId, containerType)
+	eventBus.Fire(event.LaunchStarted, launchId)
 	if container, ok := config.GetContainer(containerType); ok {
-		log.Printf("[LAUNCHING] [%s] [%s]\n", launch.Id, containerType)
 		parallelBuilds := GetParallelBuilds(container, launch)
 		for testCaseId, pb := range parallelBuilds {
 			go func() {
+				start := time.Now()
+				log.Printf("[LAUNCHING] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
 				cancel, finished, err := docker.StartWithCancel(&pb)
 				if err != nil {
-					log.Printf("[FAILED_TO_LAUNCH] [%s] [%s] %v\n", launch.Id, containerType, err)
+					log.Printf("[FAILED_TO_LAUNCH] [%s] [%s] [%s] %v\n", launchId, containerType, testCaseId, err)
 					return
 				}
 				rtc := &RunningTestCase{
@@ -72,11 +85,37 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 					Terminated: make(chan struct{}),
 				}
 				testCases.Put(testCaseId, rtc)
+				duration := float64(time.Now().Sub(start).Seconds())
+				wg.Add(1)
+				eventBus.Fire(event.TestCaseStarted, testCaseId)
+				log.Printf("[LAUNCHED] [%s] [%s] [%s] [%.2fs]\n", launchId, containerType, testCaseId, duration)
+				select {
+				case success := <-rtc.Finished: {
+					if success {
+						eventBus.Fire(event.TestCasePassed, testCaseId)
+						log.Printf("[PASSED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+					} else {
+						eventBus.Fire(event.TestCaseFailed, testCaseId)
+						log.Printf("[FAILED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+					}
+				}
+				case <-rtc.Terminated: {
+					eventBus.Fire(event.TestCaseRevoked, testCaseId)
+					log.Printf("[TERMINATED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+				}
+				}
+				testCases.Delete(testCaseId)
+				wg.Done()
 			}()
 		}
+		go func() {
+			wg.Wait()
+			eventBus.Fire(event.LaunchFinished, launchId)
+			log.Printf("[LAUNCH_FINISHED] [%s] [%s]\n", launchId, containerType)
+		}()
 		return
 	}
-	log.Printf("[UNSUPPORTED_CONTAINER_TYPE] [%s] [%s]\n", launch.Id, containerType)
+	log.Printf("[UNSUPPORTED_CONTAINER_TYPE] [%s] [%s]\n", launchId, containerType)
 }
 
 func ConsumeTerminates(exit chan bool) {
@@ -97,6 +136,5 @@ func terminateImpl(testCaseId string) {
 		log.Printf("[TERMINATING] [%s]\n", testCaseId)
 		runningTestCase.Cancel()
 		close(runningTestCase.Terminated)
-		log.Printf("[TERMINATED] [%s]\n", testCaseId)
 	}
 }
