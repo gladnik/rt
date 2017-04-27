@@ -3,7 +3,7 @@ package api
 // Includes flags, tests in parallel
 type Property struct {
 	Key   string `json:"key"`
-	Name  string `json:"name"`
+	Name  string `json:"name"` //TODO: do we need this?
 	Value string `json:"value"`
 }
 

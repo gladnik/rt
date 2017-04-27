@@ -6,11 +6,10 @@ type Starter interface {
 
 // Build settings
 type BuildSettings struct {
-	Image        string
-	Command      []string
-	Tmpfs        map[string]string
-	DataDir      string //Data directory inside container
-	TemplateFile string
-	BuildData    map[string]string
-	BuildFile    string
+	Image     string
+	Command   []string
+	Tmpfs     map[string]string
+	DataDir   string //Data directory inside container
+	Templates map[string]string
+	BuildData map[string]string
 }

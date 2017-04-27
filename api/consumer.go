@@ -2,11 +2,11 @@ package api
 
 import (
 	"github.com/aerokube/rt/config"
+	"github.com/aerokube/rt/event"
 	"github.com/aerokube/rt/service"
 	"log"
 	"sync"
 	"time"
-	"github.com/aerokube/rt/event"
 )
 
 var (
@@ -90,19 +90,21 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 				eventBus.Fire(event.TestCaseStarted, testCaseId)
 				log.Printf("[LAUNCHED] [%s] [%s] [%s] [%.2fs]\n", launchId, containerType, testCaseId, duration)
 				select {
-				case success := <-rtc.Finished: {
-					if success {
-						eventBus.Fire(event.TestCasePassed, testCaseId)
-						log.Printf("[PASSED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
-					} else {
-						eventBus.Fire(event.TestCaseFailed, testCaseId)
-						log.Printf("[FAILED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+				case success := <-rtc.Finished:
+					{
+						if success {
+							eventBus.Fire(event.TestCasePassed, testCaseId)
+							log.Printf("[PASSED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+						} else {
+							eventBus.Fire(event.TestCaseFailed, testCaseId)
+							log.Printf("[FAILED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+						}
 					}
-				}
-				case <-rtc.Terminated: {
-					eventBus.Fire(event.TestCaseRevoked, testCaseId)
-					log.Printf("[TERMINATED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
-				}
+				case <-rtc.Terminated:
+					{
+						eventBus.Fire(event.TestCaseRevoked, testCaseId)
+						log.Printf("[TERMINATED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+					}
 				}
 				testCases.Delete(testCaseId)
 				wg.Done()

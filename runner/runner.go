@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
 	"fmt"
+	"github.com/aerokube/rt/common"
 	"io"
 	"log"
 	"os"
@@ -16,10 +16,10 @@ import (
 )
 
 var (
-	dataDir         string
-	templateFile    string
-	rawBuildData    string
-	buildFile       string
+	dataDir      string
+	rawTemplates string
+	rawBuildData string
+
 	runningCommands []int
 )
 
@@ -28,16 +28,20 @@ const (
 	failedCode
 	terminatedCode
 	errorCode
-
-	testCaseNameKey = "testCaseName"
 )
 
 func init() {
-	flag.StringVar(&dataDir, "data-dir", "/data", "directory to output data to")
-	flag.StringVar(&templateFile, "template-file", "", "template file path")
-	flag.StringVar(&rawBuildData, "build-data", "{}", "json data to be passed to template")
-	flag.StringVar(&buildFile, "build-file", "", "output build file path")
-	flag.Parse()
+	dataDir = getEnvOrDefault(common.DataDir, "/data")
+	rawTemplates = getEnvOrDefault(common.Templates, "{}")
+	rawBuildData = getEnvOrDefault(common.BuildData, "{}")
+}
+
+func getEnvOrDefault(name string, defaultValue string) string {
+	env := os.Getenv(name)
+	if env == "" {
+		return defaultValue
+	}
+	return env
 }
 
 func main() {
@@ -53,13 +57,16 @@ func main() {
 		log.Printf("Failed to parse template data: %v\n", err)
 		os.Exit(errorCode)
 	}
-	testCaseName, ok := buildData[testCaseNameKey]
+	testCaseName, ok := buildData[common.TestCaseNameKey]
 	if !ok {
 		log.Println("Test case name can not be empty")
 		os.Exit(errorCode)
 	}
-	if templateFile != "" && buildFile != "" {
-		err = generateBuildFile(templateFile, rawBuildData, buildFile)
+
+	var templates map[string]string
+	err = json.Unmarshal([]byte(rawTemplates), &templates)
+	if len(templates) > 0 {
+		err = generateBuildFiles(templates, buildData)
 		if err != nil {
 			log.Printf("Can not obtain build file: %v\n", err)
 			os.Exit(errorCode)
@@ -83,24 +90,26 @@ func main() {
 func chDir(dir string) error {
 	_, err := os.Stat(dir)
 	if err != nil {
-		return fmt.Errorf("Invalid directory \"%s\": %v\n", dir, err)
+		return fmt.Errorf("invalid directory \"%s\": %v\n", dir, err)
 	}
 	return os.Chdir(dir)
 }
 
-func generateBuildFile(templateFile string, rawTemplateData string, buildFile string) error {
-	t, err := template.ParseFiles(templateFile)
-	if err != nil {
-		return fmt.Errorf("Failed to parse template file \"%s\": %v", templateFile, err)
-	}
-	f, err := os.Create(buildFile)
-	if err != nil {
-		return fmt.Errorf("Failed to create build file \"%s\": %v", buildFile, err)
-	}
-	defer f.Close()
-	err = t.Execute(f, rawTemplateData)
-	if err != nil {
-		return fmt.Errorf("Failed to generate build file \"%s\": %v", buildFile, err)
+func generateBuildFiles(templates map[string]string, buildData map[string]string) error {
+	for outputFile, tpl := range templates {
+		t, err := template.ParseFiles(tpl)
+		if err != nil {
+			return fmt.Errorf("failed to parse template file \"%s\": %v", tpl, err)
+		}
+		f, err := os.Create(outputFile)
+		if err != nil {
+			return fmt.Errorf("failed to create build file \"%s\": %v", outputFile, err)
+		}
+		defer f.Close()
+		err = t.Execute(f, buildData)
+		if err != nil {
+			return fmt.Errorf("failed to generate build file \"%s\": %v", outputFile, err)
+		}
 	}
 	return nil
 }

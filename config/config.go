@@ -14,9 +14,10 @@ import (
 type Containers map[string]Container
 
 type Container struct {
-	Image   string            `json:"image"`
-	DataDir string            `json:"dataDir"`
-	Tmpfs   map[string]string `json:"tmpfs"`
+	Image     string            `json:"image"`
+	DataDir   string            `json:"dataDir"`
+	Tmpfs     map[string]string `json:"tmpfs"`
+	Templates map[string]string `json:"templates"`
 }
 
 // Config current configuration

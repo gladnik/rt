@@ -2,11 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/aerokube/rt/event"
 	"github.com/gorilla/websocket"
 	"log"
 	"math"
 	"net/http"
-	"github.com/aerokube/rt/event"
 )
 
 /*
@@ -39,7 +40,7 @@ func Mux(exit chan bool) http.Handler {
 var (
 	launchesQueue  = make(chan Launch, math.MaxUint32)
 	terminateQueue = make(chan string, math.MaxUint32)
-	eventBus = event.NewEventBus()
+	eventBus       = event.NewEventBus()
 	upgrader       = websocket.Upgrader{}
 )
 
@@ -57,6 +58,14 @@ func launch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("A launch object is expected"))
+		return
+	}
+
+	launchType := launch.Type
+	if !IsToolSupported(launchType) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("Unsupported launch type: %s\n", launchType)))
+		log.Printf("[UNSUPPORTED_LAUNCH_TYPE] [%s]\n", launchType)
 		return
 	}
 	launchesQueue <- launch

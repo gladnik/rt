@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/aerokube/rt/common"
 	"github.com/aerokube/rt/config"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"k8s.io/apimachinery/pkg/util/json"
 	"log"
 	"time"
 )
@@ -21,7 +23,7 @@ type Docker struct {
 func NewDocker(config *config.Config) (*Docker, error) {
 	cl, err := client.NewEnvClient()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Docker client: %v\n", err)
+		return nil, fmt.Errorf("failed to create Docker client: %v\n", err)
 	}
 	return &Docker{
 		DataDir:   config.DataDir,
@@ -32,8 +34,19 @@ func NewDocker(config *config.Config) (*Docker, error) {
 
 func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, error) {
 	ctx := context.Background()
+	rawTemplates, err := marshalData(bs.Templates)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal templates info: %v\n", err)
+	}
+	rawBuildData, err := marshalData(bs.BuildData)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal build data: %v\n", err)
+	}
 	env := []string{
 		fmt.Sprintf("TZ=%s", time.Local),
+		fmt.Sprintf("%s=%s", common.DataDir, bs.DataDir),
+		fmt.Sprintf("%s=%s", common.Templates, rawTemplates),
+		fmt.Sprintf("%s=%s", common.BuildData, rawBuildData),
 	}
 	volumes := []string{fmt.Sprintf("%s:%s", docker.DataDir, bs.DataDir)}
 	resp, err := docker.Client.ContainerCreate(ctx,
@@ -53,7 +66,7 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 		},
 		&network.NetworkingConfig{}, "")
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to create container: %v", err)
+		return nil, nil, fmt.Errorf("failed to create container: %v", err)
 	}
 	containerStartTime := time.Now()
 	log.Println("[STARTING_CONTAINER]")
@@ -62,10 +75,18 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 	go docker.waitFor(ctx, resp.ID, finished)
 	if err != nil {
 		docker.removeContainer(ctx, resp.ID)
-		return nil, nil, fmt.Errorf("Failed to start container: %v", err)
+		return nil, nil, fmt.Errorf("failed to start container: %v", err)
 	}
 	log.Printf("[CONTAINER_STARTED] [%s] [%v]\n", resp.ID, time.Since(containerStartTime))
 	return func() { docker.removeContainer(ctx, resp.ID) }, finished, nil
+}
+
+func marshalData(m interface{}) (string, error) {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal data: %v\n", err)
+	}
+	return string(data), nil
 }
 
 func (docker *Docker) waitFor(ctx context.Context, containerId string, finished chan bool) {
