@@ -18,6 +18,7 @@ var (
 	logConfPath string
 	dataDir     string
 	timeout     time.Duration
+	shutdownTimeout     time.Duration
 )
 
 func init() {
@@ -26,6 +27,7 @@ func init() {
 	flag.StringVar(&logConfPath, "log-conf", "config/container-logs.json", "Container logging configuration file")
 	flag.StringVar(&dataDir, "dataDir", "data", "directory to save results to")
 	flag.DurationVar(&timeout, "timeout", 2*time.Hour, "test case timeout")
+	flag.DurationVar(&shutdownTimeout, "shutdown-timeout", 5*time.Minute, "time to wait for test cases to finish on shutdown")
 	flag.Parse()
 }
 
@@ -40,7 +42,7 @@ func cancelOnSignal(exit chan bool) {
 }
 
 func main() {
-	conf := config.NewConfig(dataDir, timeout)
+	conf := config.NewConfig(dataDir, timeout, shutdownTimeout)
 	err := conf.Load(confPath, logConfPath)
 	if err != nil {
 		log.Fatalf("%s: %v", os.Args[0], err)
@@ -50,5 +52,7 @@ func main() {
 	go api.ConsumeLaunches(conf, exit)
 	go api.ConsumeTerminates(exit)
 	log.Printf("Listening on %s\n", listen)
+	log.Printf("Test case timeout is %s\n", timeout)
+	log.Printf("Shutdown timeout is %s\n", shutdownTimeout)
 	log.Fatal(http.ListenAndServe(listen, api.Mux(exit)))
 }

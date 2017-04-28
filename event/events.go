@@ -26,6 +26,7 @@ const (
 	TestCasePassed  = "test_case_finished"
 	TestCaseFailed  = "test_case_failed"
 	TestCaseRevoked = "test_case_revoked"
+	TestCaseTimedOut = "test_case_timed_out"
 )
 
 type Event struct {

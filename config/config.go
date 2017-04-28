@@ -27,11 +27,18 @@ type Config struct {
 	LogConfig  *container.LogConfig
 	DataDir    string
 	Timeout    time.Duration
+	ShutdownTimeout    time.Duration
 }
 
 // NewConfig creates new config
-func NewConfig(dataDir string, timeout time.Duration) *Config {
-	return &Config{Containers: make(map[string]Container), LogConfig: new(container.LogConfig), DataDir: dataDir, Timeout: timeout}
+func NewConfig(dataDir string, timeout time.Duration, shutdownTimeout time.Duration) *Config {
+	return &Config{
+		Containers: make(map[string]Container),
+		LogConfig: new(container.LogConfig),
+		DataDir: dataDir,
+		Timeout: timeout,
+		ShutdownTimeout: shutdownTimeout,
+	}
 }
 
 func (c *Config) Load(containers, containerLogs string) error {

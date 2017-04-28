@@ -27,6 +27,14 @@ func (t *TestCases) Get(testCaseId string) (*RunningTestCase, bool) {
 	return nil, false
 }
 
+func (t *TestCases) ForEach(fn func(*RunningTestCase)) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	for _, tc := range t.testCases {
+		fn(tc)
+	}
+}
+
 func (t *TestCases) Put(testCaseId string, tc *RunningTestCase) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -38,6 +46,8 @@ func (t *TestCases) Delete(testCaseId string) {
 	defer t.lock.Unlock()
 	delete(t.testCases, testCaseId)
 }
+
+
 
 type RunningTestCase struct {
 	Cancel     func()
@@ -53,6 +63,7 @@ func ConsumeLaunches(config *config.Config, exit chan bool) {
 	for {
 		select {
 		case <-exit:
+			waitForTestCasesToFinish(config)
 			return
 		case launch := <-launchesQueue:
 			{
@@ -60,6 +71,18 @@ func ConsumeLaunches(config *config.Config, exit chan bool) {
 			}
 		}
 	}
+}
+
+func waitForTestCasesToFinish(config *config.Config) {
+	log.Printf("[SHUTTING_DOWN] [%s] [%d]\n", config.ShutdownTimeout, len(testCases.testCases))
+	testCases.ForEach(func(tc *RunningTestCase){
+		go func(){
+			select {
+			case <-tc.Terminated: return
+			case <-time.After(config.ShutdownTimeout): close(tc.Terminated)
+			}
+		}()
+	})
 }
 
 func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
@@ -100,9 +123,17 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 							log.Printf("[FAILED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
 						}
 					}
+					
 				case <-rtc.Terminated:
 					{
 						eventBus.Fire(event.TestCaseRevoked, testCaseId)
+						log.Printf("[TERMINATED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+					}
+				case <-time.After(config.Timeout):
+					{
+						log.Printf("[TIMED_OUT] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+						terminateImpl(testCaseId)
+						eventBus.Fire(event.TestCaseTimedOut, testCaseId)
 						log.Printf("[TERMINATED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
 					}
 				}
