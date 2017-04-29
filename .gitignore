@@ -3,3 +3,4 @@
 rt
 runner/runner
 coverage.*
+vendor/*/

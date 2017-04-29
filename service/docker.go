@@ -9,10 +9,10 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"k8s.io/apimachinery/pkg/util/json"
 	"log"
 	"path"
 	"time"
+	"encoding/json"
 )
 
 type Docker struct {
