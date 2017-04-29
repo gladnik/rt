@@ -1,9 +1,8 @@
-package api
+package common
 
 // Includes flags, tests in parallel
 type Property struct {
 	Key   string `json:"key"`
-	Name  string `json:"name"` //TODO: do we need this?
 	Value string `json:"value"`
 }
 
@@ -20,6 +19,12 @@ type TestCase struct {
 	Name     string   `json:"name"`
 	Artifact Artifact `json:"artifact"`
 	Tags     []string `json:"tags"` // Suite name is an automatically added tag
+}
+
+// Data passed to each container
+type StandaloneTestCase struct {
+	TestCase   TestCase
+	Properties []Property
 }
 
 // A set of test cases launched in the same request

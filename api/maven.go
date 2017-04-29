@@ -1,17 +1,19 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+	. "github.com/aerokube/rt/common"
+)
 
 type MavenTool struct {
 }
 
-func (mt *MavenTool) GetSettings(testCase TestCase, properties []Property) ToolSettings {
-	command := []string{"mvn", "-f", "pom.xml", "-Dtest=" + testCase.Name}
+func (mt *MavenTool) GetSettings(testCase TestCase, properties []Property) Command {
+	//mvn -f pom.xml [...properties] verify
+	cmd := []string{"mvn", "-f", "pom.xml", "-Dtest=" + testCase.Name}
 	for _, property := range properties {
-		command = append(command, fmt.Sprintf("-D%s=%s", property.Key, property.Value))
+		cmd = append(cmd, fmt.Sprintf("-D%s=%s", property.Key, property.Value))
 	}
-	return ToolSettings{
-		Command:   command,
-		BuildData: make(map[string]string),
-	}
+	cmd = append(cmd, "verify")
+	return cmd
 }

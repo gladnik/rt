@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/aerokube/rt/common"
+	. "github.com/aerokube/rt/common"
 	"github.com/aerokube/rt/config"
 	"github.com/aerokube/rt/service"
 	"github.com/emicklei/go-restful/log"
@@ -17,13 +17,10 @@ var (
 	}
 )
 
-type Tool interface {
-	GetSettings(testCase TestCase, properties []Property) ToolSettings
-}
+type Command []string
 
-type ToolSettings struct {
-	Command   []string
-	BuildData map[string]string
+type Tool interface {
+	GetSettings(testCase TestCase, properties []Property) Command
 }
 
 // Converts launch object to a set of build settings for each separate container
@@ -33,16 +30,16 @@ func GetParallelBuilds(container *config.Container, launch *Launch) map[string]s
 	if ok {
 		//TODO: could do this in parallel with goroutines...
 		for _, testCase := range launch.TestCases {
-			ts := tool.GetSettings(testCase, launch.Properties)
-			bd := ts.BuildData
-			bd[common.TestCaseNameKey] = testCase.Name
 			bs := service.BuildSettings{
 				Image:     container.Image,
-				Command:   ts.Command,
+				Command:   tool.GetSettings(testCase, launch.Properties),
 				Tmpfs:     container.Tmpfs,
 				DataDir:   container.DataDir,
 				Templates: container.Templates,
-				BuildData: bd,
+				BuildData: StandaloneTestCase{
+					TestCase:   testCase,
+					Properties: launch.Properties,
+				},
 			}
 			ret[testCase.Id] = bs
 		}

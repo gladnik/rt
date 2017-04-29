@@ -1,6 +1,7 @@
 package api
 
 import (
+	. "github.com/aerokube/rt/common"
 	"github.com/aerokube/rt/config"
 	"github.com/aerokube/rt/event"
 	"github.com/aerokube/rt/service"
@@ -47,8 +48,6 @@ func (t *TestCases) Delete(testCaseId string) {
 	delete(t.testCases, testCaseId)
 }
 
-
-
 type RunningTestCase struct {
 	Cancel     func()
 	Finished   <-chan bool
@@ -75,11 +74,13 @@ func ConsumeLaunches(config *config.Config, exit chan bool) {
 
 func waitForTestCasesToFinish(config *config.Config) {
 	log.Printf("[SHUTTING_DOWN] [%s] [%d]\n", config.ShutdownTimeout, len(testCases.testCases))
-	testCases.ForEach(func(tc *RunningTestCase){
-		go func(){
+	testCases.ForEach(func(tc *RunningTestCase) {
+		go func() {
 			select {
-			case <-tc.Terminated: return
-			case <-time.After(config.ShutdownTimeout): close(tc.Terminated)
+			case <-tc.Terminated:
+				return
+			case <-time.After(config.ShutdownTimeout):
+				close(tc.Terminated)
 			}
 		}()
 	})
@@ -123,7 +124,7 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 							log.Printf("[FAILED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
 						}
 					}
-					
+
 				case <-rtc.Terminated:
 					{
 						eventBus.Fire(event.TestCaseRevoked, testCaseId)

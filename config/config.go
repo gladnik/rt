@@ -22,21 +22,21 @@ type Container struct {
 
 // Config current configuration
 type Config struct {
-	lock       sync.RWMutex
-	Containers map[string]Container
-	LogConfig  *container.LogConfig
-	DataDir    string
-	Timeout    time.Duration
-	ShutdownTimeout    time.Duration
+	lock            sync.RWMutex
+	Containers      map[string]Container
+	LogConfig       *container.LogConfig
+	DataDir         string
+	Timeout         time.Duration
+	ShutdownTimeout time.Duration
 }
 
 // NewConfig creates new config
 func NewConfig(dataDir string, timeout time.Duration, shutdownTimeout time.Duration) *Config {
 	return &Config{
-		Containers: make(map[string]Container),
-		LogConfig: new(container.LogConfig),
-		DataDir: dataDir,
-		Timeout: timeout,
+		Containers:      make(map[string]Container),
+		LogConfig:       new(container.LogConfig),
+		DataDir:         dataDir,
+		Timeout:         timeout,
 		ShutdownTimeout: shutdownTimeout,
 	}
 }

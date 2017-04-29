@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/aerokube/rt/common"
+	. "github.com/aerokube/rt/common"
 	"io"
 	"log"
 	"os"
@@ -31,9 +31,9 @@ const (
 )
 
 func init() {
-	dataDir = getEnvOrDefault(common.DataDir, "/data")
-	rawTemplates = getEnvOrDefault(common.Templates, "{}")
-	rawBuildData = getEnvOrDefault(common.BuildData, "{}")
+	dataDir = getEnvOrDefault(DataDir, "/")
+	rawTemplates = getEnvOrDefault(Templates, "{}")
+	rawBuildData = getEnvOrDefault(BuildData, "{}")
 }
 
 func getEnvOrDefault(name string, defaultValue string) string {
@@ -51,17 +51,13 @@ func main() {
 		os.Exit(errorCode)
 	}
 
-	var buildData map[string]string
+	var buildData StandaloneTestCase
 	err = json.Unmarshal([]byte(rawBuildData), &buildData)
 	if err != nil {
 		log.Printf("Failed to parse template data: %v\n", err)
 		os.Exit(errorCode)
 	}
-	testCaseName, ok := buildData[common.TestCaseNameKey]
-	if !ok {
-		log.Println("Test case name can not be empty")
-		os.Exit(errorCode)
-	}
+	testCaseName := buildData.TestCase.Name
 
 	var templates map[string]string
 	err = json.Unmarshal([]byte(rawTemplates), &templates)
@@ -95,7 +91,7 @@ func chDir(dir string) error {
 	return os.Chdir(dir)
 }
 
-func generateBuildFiles(templates map[string]string, buildData map[string]string) error {
+func generateBuildFiles(templates map[string]string, buildData StandaloneTestCase) error {
 	for outputFile, tpl := range templates {
 		t, err := template.ParseFiles(tpl)
 		if err != nil {

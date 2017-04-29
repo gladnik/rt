@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	. "github.com/aerokube/rt/common"
 	"github.com/aerokube/rt/event"
 	"github.com/gorilla/websocket"
 	"log"

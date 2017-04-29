@@ -1,5 +1,7 @@
 package service
 
+import "github.com/aerokube/rt/common"
+
 type Starter interface {
 	StartWithCancel(bs *BuildSettings) (func(), <-chan bool, error)
 }
@@ -11,5 +13,5 @@ type BuildSettings struct {
 	Tmpfs     map[string]string
 	DataDir   string //Data directory inside container
 	Templates map[string]string
-	BuildData map[string]string
+	BuildData common.StandaloneTestCase
 }

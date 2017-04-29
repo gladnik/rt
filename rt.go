@@ -13,12 +13,12 @@ import (
 )
 
 var (
-	listen      string
-	confPath    string
-	logConfPath string
-	dataDir     string
-	timeout     time.Duration
-	shutdownTimeout     time.Duration
+	listen          string
+	confPath        string
+	logConfPath     string
+	dataDir         string
+	timeout         time.Duration
+	shutdownTimeout time.Duration
 )
 
 func init() {

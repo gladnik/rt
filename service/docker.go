@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/aerokube/rt/common"
+	. "github.com/aerokube/rt/common"
 	"github.com/aerokube/rt/config"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -44,9 +44,9 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 	}
 	env := []string{
 		fmt.Sprintf("TZ=%s", time.Local),
-		fmt.Sprintf("%s=%s", common.DataDir, bs.DataDir),
-		fmt.Sprintf("%s=%s", common.Templates, rawTemplates),
-		fmt.Sprintf("%s=%s", common.BuildData, rawBuildData),
+		fmt.Sprintf("%s=%s", DataDir, bs.DataDir),
+		fmt.Sprintf("%s=%s", Templates, rawTemplates),
+		fmt.Sprintf("%s=%s", BuildData, rawBuildData),
 	}
 	volumes := []string{fmt.Sprintf("%s:%s", docker.DataDir, bs.DataDir)}
 	resp, err := docker.Client.ContainerCreate(ctx,
