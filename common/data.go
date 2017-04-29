@@ -8,9 +8,9 @@ type Property struct {
 
 // Artifact with tests like Maven or NPM artifact
 type Artifact struct {
-	Group    string `json:"group"`
-	Artifact string `json:"artifact"`
-	Version  string `json:"version"`
+	GroupId string `json:"groupId"`
+	Id      string `json:"id"`
+	Version string `json:"version"`
 }
 
 // Main execution unit

@@ -1,0 +1,40 @@
+{
+  "id": "d5287e8c-256c-4c3a-acda-f5759db95974",
+  "type": "maven",
+  "testcases": [
+    {
+      "id": "85a4e8ee-bc24-496e-8e63-284ffb1bdde9",
+      "name": "com.aerokube.rt.SimpleTest#testOne",
+      "artifact": {
+        "id": "rt-tests",
+        "groupId": "com.aerokube.rt",
+        "version": "1.0-SNAPSHOT"
+      },
+      "tags": [
+        "com.aerokube.rt.SimpleTest"
+      ]
+    },
+    {
+      "id": "2d1cdcc3-da1c-4896-8b17-aec2cee61a88",
+      "name": "com.aerokube.rt.SimpleTest#testTwo",
+      "artifact": {
+        "id": "rt-tests",
+        "groupId": "com.aerokube.rt",
+        "version": "1.0-SNAPSHOT"
+      },
+      "tags": [
+        "com.aerokube.rt.SimpleTest"
+      ]
+    }
+  ],
+  "properties": [
+    {
+      "key": "key1",
+      "value": "value1"
+    },
+    {
+      "key": "key2",
+      "value": "value2"
+    }
+  ]
+}
