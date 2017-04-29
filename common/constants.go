@@ -1,9 +1,8 @@
 package common
 
 const (
-	DataDir   = "data-dir"
-	Templates = "templates"
-	BuildData = "build-data"
+	DataDir   = "DATA_DIR"
+	Templates = "TEMPLATES"
+	BuildData = "BUILD_DATA"
 
-	TestCaseNameKey = "testCaseName"
 )
