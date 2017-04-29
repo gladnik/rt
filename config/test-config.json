@@ -1,0 +1,15 @@
+{
+  "maven": {
+    "image": "aerokube/maven:latest",
+    "dataDir": ".",
+    "tmpfs": {
+      "/tmp": "size=128m"
+    },
+    "templates": {
+      "pom.xml.tmpl": "pom.xml"
+    },
+    "volumes": [
+      "/.m2:/$HOME/.m2"
+    ]
+  }
+}

@@ -10,7 +10,7 @@ type MavenTool struct {
 
 func (mt *MavenTool) GetSettings(testCase TestCase, properties []Property) Command {
 	//mvn -f pom.xml [...properties] verify
-	cmd := []string{"mvn", "-f", "pom.xml", "-Dtest=" + testCase.Name}
+	cmd := []string{"mvn", "-f", "pom.xml", "-Dmaven.repo.local=/.m2", "-Dtest=" + testCase.Name}
 	for _, property := range properties {
 		cmd = append(cmd, fmt.Sprintf("-D%s=%s", property.Key, property.Value))
 	}
