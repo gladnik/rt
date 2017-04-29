@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"time"
 )
 
 /*
@@ -29,6 +30,14 @@ const (
 	messageType   = 19
 )
 
+var (
+	launchesQueue  = make(chan Launch, math.MaxUint32)
+	terminateQueue = make(chan string, math.MaxUint32)
+	eventBus       = event.NewEventBus()
+	upgrader       = websocket.Upgrader{}
+	startTime      = time.Now()
+)
+
 func Mux(exit chan bool) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(pingPath, ping)
@@ -38,15 +47,8 @@ func Mux(exit chan bool) http.Handler {
 	return mux
 }
 
-var (
-	launchesQueue  = make(chan Launch, math.MaxUint32)
-	terminateQueue = make(chan string, math.MaxUint32)
-	eventBus       = event.NewEventBus()
-	upgrader       = websocket.Upgrader{}
-)
-
 func ping(w http.ResponseWriter, _ *http.Request) {
-	w.Write([]byte("Ok\n"))
+	w.Write([]byte(fmt.Sprintf("{\"uptime\": \"%s\"}\n", time.Since(startTime))))
 }
 
 func launch(w http.ResponseWriter, r *http.Request) {
