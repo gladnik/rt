@@ -11,8 +11,29 @@ import (
 )
 
 var (
+	launches = &Launches{}
 	testCases = &TestCases{}
 )
+
+type Launches struct {
+	lock sync.RWMutex
+	launches map[string] *Launch
+}
+
+func (l *Launches) Get(launchId string) (*Launch, bool) {
+	l.lock.RUnlock()
+	defer l.lock.RUnlock()
+	if l, ok := l.launches[launchId]; ok {
+		return l, true
+	}
+	return nil, false
+}
+
+func (l *Launches) Put(launchId string, launch *Launch) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	l.launches[launchId] = launch
+}
 
 type TestCases struct {
 	lock      sync.RWMutex
@@ -64,9 +85,13 @@ func ConsumeLaunches(config *config.Config, exit chan bool) {
 		case <-exit:
 			waitForTestCasesToFinish(config)
 			return
-		case launch := <-launchesQueue:
+		case launchId := <-launchesQueue:
 			{
-				launchImpl(config, docker, &launch)
+				if launch, ok := launches.Get(launchId); ok {
+					launchImpl(config, docker, launch)
+				} else {
+					log.Printf("[MISSING_LAUNCH] [%s]\n", launchId)
+				}
 			}
 		}
 	}

@@ -7,7 +7,6 @@ import (
 	"github.com/aerokube/rt/event"
 	"github.com/gorilla/websocket"
 	"log"
-	"math"
 	"net/http"
 	"time"
 )
@@ -28,11 +27,12 @@ const (
 	terminatePath = "/terminate"
 	eventsPath    = "/events"
 	messageType   = 19
+	maxQueueSize  = 512
 )
 
 var (
-	launchesQueue  = make(chan Launch, math.MaxUint32)
-	terminateQueue = make(chan string, math.MaxUint32)
+	launchesQueue  = make(chan string, maxQueueSize)
+	terminateQueue = make(chan string, maxQueueSize)
 	eventBus       = event.NewEventBus()
 	upgrader       = websocket.Upgrader{}
 	startTime      = time.Now()
@@ -65,13 +65,15 @@ func launch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	launchType := launch.Type
+	launchId := launch.Id
 	if !IsToolSupported(launchType) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("Unsupported launch type: %s\n", launchType)))
 		log.Printf("[UNSUPPORTED_LAUNCH_TYPE] [%s]\n", launchType)
 		return
 	}
-	launchesQueue <- launch
+	launches.Put(launchId, &launch)
+	launchesQueue <- launchId
 }
 
 func terminate(w http.ResponseWriter, r *http.Request) {
