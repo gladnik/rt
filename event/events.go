@@ -1,13 +1,11 @@
 package event
 
-import "math"
-
 type EventBus struct {
 	events chan Event
 }
 
 func NewEventBus() *EventBus {
-	return &EventBus{events: make(chan Event, math.MaxUint32)}
+	return &EventBus{events: make(chan Event, 128)}
 }
 
 func (eb *EventBus) Events() <-chan Event {

@@ -27,12 +27,11 @@ const (
 	terminatePath = "/terminate"
 	eventsPath    = "/events"
 	messageType   = 19
-	maxQueueSize  = 512
 )
 
 var (
-	launchesQueue  = make(chan string, maxQueueSize)
-	terminateQueue = make(chan string, maxQueueSize)
+	launchesQueue  = make(chan string, 512)
+	terminateQueue = make(chan string, 512)
 	eventBus       = event.NewEventBus()
 	upgrader       = websocket.Upgrader{}
 	startTime      = time.Now()
