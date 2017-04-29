@@ -30,8 +30,8 @@ const (
 )
 
 var (
-	launchesQueue  = make(chan string, 512)
-	terminateQueue = make(chan string, 512)
+	launchesQueue  = make(chan string)
+	terminateQueue = make(chan string)
 	eventBus       = event.NewEventBus()
 	upgrader       = websocket.Upgrader{}
 	startTime      = time.Now()

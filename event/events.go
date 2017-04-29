@@ -5,7 +5,7 @@ type EventBus struct {
 }
 
 func NewEventBus() *EventBus {
-	return &EventBus{events: make(chan Event, 128)}
+	return &EventBus{events: make(chan Event)}
 }
 
 func (eb *EventBus) Events() <-chan Event {
