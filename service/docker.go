@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/client"
 	"k8s.io/apimachinery/pkg/util/json"
 	"log"
+	"path"
 	"time"
 )
 
@@ -48,7 +49,8 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 		fmt.Sprintf("%s=%s", Templates, rawTemplates),
 		fmt.Sprintf("%s=%s", BuildData, rawBuildData),
 	}
-	volumes := []string{fmt.Sprintf("%s:%s", docker.DataDir, bs.DataDir)}
+	volumes := []string{fmt.Sprintf("%s:%s", path.Join(docker.DataDir, bs.BuildData.TestCase.Id), bs.DataDir)}
+	volumes = append(volumes, bs.Volumes...)
 	resp, err := docker.Client.ContainerCreate(ctx,
 		&container.Config{
 			Hostname: "localhost",

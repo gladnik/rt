@@ -18,6 +18,7 @@ type Container struct {
 	DataDir   string            `json:"dataDir"`
 	Tmpfs     map[string]string `json:"tmpfs"`
 	Templates map[string]string `json:"templates"`
+	Volumes   []string          `json:"volumes"`
 }
 
 // Config current configuration

@@ -36,6 +36,7 @@ func GetParallelBuilds(container *config.Container, launch *Launch) map[string]s
 				Tmpfs:     container.Tmpfs,
 				DataDir:   container.DataDir,
 				Templates: container.Templates,
+				Volumes:   container.Volumes,
 				BuildData: StandaloneTestCase{
 					TestCase:   testCase,
 					Properties: launch.Properties,

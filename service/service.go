@@ -13,5 +13,6 @@ type BuildSettings struct {
 	Tmpfs     map[string]string
 	DataDir   string //Data directory inside container
 	Templates map[string]string
+	Volumes   []string
 	BuildData common.StandaloneTestCase
 }
