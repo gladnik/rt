@@ -24,8 +24,8 @@ var (
 func init() {
 	flag.StringVar(&listen, "listen", ":8080", "Network address to accept connections")
 	flag.StringVar(&confPath, "conf", "config/containers.json", "configuration file path")
-	flag.StringVar(&logConfPath, "log-conf", "config/container-logs.json", "Container logging configuration file")
-	flag.StringVar(&dataDir, "dataDir", "data", "directory to save results to")
+	flag.StringVar(&logConfPath, "log-conf", "config/container-logs.json", "container logging configuration file")
+	flag.StringVar(&dataDir, "data-dir", "data", "directory to save results to")
 	flag.DurationVar(&timeout, "timeout", 2*time.Hour, "test case timeout")
 	flag.DurationVar(&shutdownTimeout, "shutdown-timeout", 5*time.Minute, "time to wait for test cases to finish on shutdown")
 	flag.Parse()
