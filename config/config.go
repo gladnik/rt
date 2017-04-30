@@ -24,7 +24,7 @@ type Container struct {
 // Config current configuration
 type Config struct {
 	lock            sync.RWMutex
-	Containers      map[string]Container
+	containers      map[string]Container
 	LogConfig       *container.LogConfig
 	DataDir         string
 	Timeout         time.Duration
@@ -34,7 +34,7 @@ type Config struct {
 // NewConfig creates new config
 func NewConfig(dataDir string, timeout time.Duration, shutdownTimeout time.Duration) *Config {
 	return &Config{
-		Containers:      make(map[string]Container),
+		containers:      make(map[string]Container),
 		LogConfig:       new(container.LogConfig),
 		DataDir:         dataDir,
 		Timeout:         timeout,
@@ -47,7 +47,7 @@ func (c *Config) Load(containers, containerLogs string) error {
 	ct := make(Containers)
 	err := loadJSON(containers, &ct)
 	if err != nil {
-		return fmt.Errorf("browsers config: %v", err)
+		return fmt.Errorf("containers config: %v", err)
 	}
 	log.Printf("Loaded configuration from [%s]\n", containers)
 	var cl *container.LogConfig
@@ -60,7 +60,7 @@ func (c *Config) Load(containers, containerLogs string) error {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.Containers, c.LogConfig = ct, cl
+	c.containers, c.LogConfig = ct, cl
 	return nil
 }
 
@@ -78,7 +78,7 @@ func loadJSON(filename string, v interface{}) error {
 func (c *Config) GetContainer(containerType string) (*Container, bool) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	if c, ok := c.Containers[containerType]; ok {
+	if c, ok := c.containers[containerType]; ok {
 		return &c, true
 	}
 	return nil, false
