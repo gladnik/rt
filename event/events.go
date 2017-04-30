@@ -13,7 +13,9 @@ func (eb *EventBus) Events() <-chan Event {
 }
 
 func (eb *EventBus) Fire(eventType string, id string) {
-	eb.events <- Event{Type: eventType, Id: id}
+	go func() {
+		eb.events <- Event{Type: eventType, Id: id}
+	}()
 }
 
 // Events
