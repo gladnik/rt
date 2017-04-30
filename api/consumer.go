@@ -35,6 +35,12 @@ func (l *Launches) Put(launchId string, launch *Launch) {
 	l.launches[launchId] = launch
 }
 
+func (l *Launches) Delete(launchId string) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	delete(l.launches, launchId)
+}
+
 type TestCases struct {
 	lock      sync.RWMutex
 	testCases map[string]*RunningTestCase // key is testCaseId
@@ -114,8 +120,8 @@ func waitForTestCasesToFinish(config *config.Config) {
 func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 	containerType := launch.Type
 	launchId := launch.Id
-	log.Printf("[LAUNCH_STARTED] [%s] [%s]\n", launchId, containerType)
 	eventBus.Fire(event.LaunchStarted, launchId)
+	log.Printf("[LAUNCH_STARTED] [%s] [%s]\n", launchId, containerType)
 	if container, ok := config.GetContainer(containerType); ok {
 		parallelBuilds := GetParallelBuilds(container, launch)
 		wg := sync.WaitGroup{}
@@ -168,6 +174,7 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 			}()
 		}
 		wg.Wait()
+		launches.Delete(launchId)
 		eventBus.Fire(event.LaunchFinished, launchId)
 		log.Printf("[LAUNCH_FINISHED] [%s] [%s]\n", launchId, containerType)
 	} else {
