@@ -1,7 +1,7 @@
 {
   "maven": {
     "image": "aerokube/maven:latest",
-    "dataDir": ".",
+    "dataDir": "/",
     "tmpfs": {
       "/tmp": "size=128m"
     },
@@ -9,7 +9,7 @@
       "pom.xml.tmpl": "pom.xml"
     },
     "volumes": [
-      "/.m2:/$HOME/.m2"
+      "$HOME/.m2:/root/.m2"
     ]
   }
 }
