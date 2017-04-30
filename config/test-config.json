@@ -9,7 +9,7 @@
       "pom.xml.tmpl": "pom.xml"
     },
     "volumes": [
-      "$HOME/.m2:/root/.m2"
+      "/root/.m2:/root/.m2"
     ]
   }
 }
