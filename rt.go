@@ -52,6 +52,7 @@ func main() {
 	go api.ConsumeLaunches(conf, exit)
 	go api.ConsumeTerminates(exit)
 	log.Printf("Listening on %s\n", listen)
+	log.Printf("Saving results to %s\n", dataDir)
 	log.Printf("Test case timeout is %s\n", timeout)
 	log.Printf("Shutdown timeout is %s\n", shutdownTimeout)
 	log.Fatal(http.ListenAndServe(listen, api.Mux(exit)))
