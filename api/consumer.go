@@ -88,7 +88,7 @@ func ConsumeLaunches(config *config.Config, exit chan bool) {
 		case launchId := <-launchesQueue:
 			{
 				if launch, ok := launches.Get(launchId); ok {
-					launchImpl(config, docker, launch)
+					go launchImpl(config, docker, launch)
 				} else {
 					log.Printf("[MISSING_LAUNCH] [%s]\n", launchId)
 				}
@@ -114,11 +114,12 @@ func waitForTestCasesToFinish(config *config.Config) {
 func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 	containerType := launch.Type
 	launchId := launch.Id
-	wg := sync.WaitGroup{}
 	log.Printf("[LAUNCH_STARTED] [%s] [%s]\n", launchId, containerType)
 	eventBus.Fire(event.LaunchStarted, launchId)
 	if container, ok := config.GetContainer(containerType); ok {
 		parallelBuilds := GetParallelBuilds(container, launch)
+		wg := sync.WaitGroup{}
+		wg.Add(len(parallelBuilds))
 		for testCaseId, pb := range parallelBuilds {
 			go func() {
 				start := time.Now()
@@ -135,7 +136,6 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 				}
 				testCases.Put(testCaseId, rtc)
 				duration := float64(time.Now().Sub(start).Seconds())
-				wg.Add(1)
 				eventBus.Fire(event.TestCaseStarted, testCaseId)
 				log.Printf("[LAUNCHED] [%s] [%s] [%s] [%.2fs]\n", launchId, containerType, testCaseId, duration)
 				select {
@@ -167,14 +167,12 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 				wg.Done()
 			}()
 		}
-		go func() {
-			wg.Wait()
-			eventBus.Fire(event.LaunchFinished, launchId)
-			log.Printf("[LAUNCH_FINISHED] [%s] [%s]\n", launchId, containerType)
-		}()
-		return
+		wg.Wait()
+		eventBus.Fire(event.LaunchFinished, launchId)
+		log.Printf("[LAUNCH_FINISHED] [%s] [%s]\n", launchId, containerType)
+	} else {
+		log.Printf("[UNSUPPORTED_CONTAINER_TYPE] [%s] [%s]\n", launchId, containerType)
 	}
-	log.Printf("[UNSUPPORTED_CONTAINER_TYPE] [%s] [%s]\n", launchId, containerType)
 }
 
 func ConsumeTerminates(exit chan bool) {
@@ -184,7 +182,7 @@ func ConsumeTerminates(exit chan bool) {
 			return
 		case testCaseId := <-terminateQueue:
 			{
-				terminateImpl(testCaseId)
+				go terminateImpl(testCaseId)
 			}
 		}
 	}
