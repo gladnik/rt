@@ -21,7 +21,7 @@ type Launches struct {
 }
 
 func (l *Launches) Get(launchId string) (*Launch, bool) {
-	l.lock.RUnlock()
+	l.lock.RLock()
 	defer l.lock.RUnlock()
 	if l, ok := l.launches[launchId]; ok {
 		return l, true
