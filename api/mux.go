@@ -94,7 +94,7 @@ func terminate(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&uuids)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("An array or test case IDs is expected"))
+		w.Write([]byte("An array of test case IDs is expected"))
 		log.Printf("[INVALID_TERMINATE_DATA] [%s]\n", r.Method)
 		return
 	}

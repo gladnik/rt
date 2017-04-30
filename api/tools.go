@@ -20,7 +20,7 @@ var (
 type Command []string
 
 type Tool interface {
-	GetSettings(testCase TestCase, properties []Property) Command
+	GetCommand(container *config.Container, testCase TestCase, properties []Property) Command
 }
 
 // Converts launch object to a set of build settings for each separate container
@@ -32,7 +32,7 @@ func GetParallelBuilds(container *config.Container, launch *Launch) map[string]s
 		for _, testCase := range launch.TestCases {
 			bs := service.BuildSettings{
 				Image:     container.Image,
-				Command:   tool.GetSettings(testCase, launch.Properties),
+				Command:   tool.GetCommand(container, testCase, launch.Properties),
 				Tmpfs:     container.Tmpfs,
 				DataDir:   container.DataDir,
 				Templates: container.Templates,
