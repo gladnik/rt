@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	launches = &Launches{}
-	testCases = &TestCases{}
+	launches = &Launches{launches: make(map[string] *Launch)}
+	testCases = &TestCases{testCases: make(map[string] *RunningTestCase)}
 )
 
 type Launches struct {
