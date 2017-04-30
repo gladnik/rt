@@ -29,10 +29,14 @@ func (l *Launches) Get(launchId string) (*Launch, bool) {
 	return nil, false
 }
 
-func (l *Launches) Put(launchId string, launch *Launch) {
+func (l *Launches) PutIfAbsent(launchId string, launch *Launch) bool {
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	l.launches[launchId] = launch
+	_, isPresent := l.launches[launchId]
+	if !isPresent {
+		l.launches[launchId] = launch
+	}
+	return isPresent
 }
 
 func (l *Launches) Delete(launchId string) {
@@ -128,6 +132,11 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 		wg.Add(len(parallelBuilds))
 		for testCaseId, pb := range parallelBuilds {
 			go func() {
+				_, testCaseIsAlreadyRunning := testCases.Get(testCaseId)
+				if testCaseIsAlreadyRunning {
+					log.Printf("[TEST_CASE_ALREADY_RUNNING] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+					return
+				}
 				start := time.Now()
 				log.Printf("[LAUNCHING] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
 				cancel, finished, err := docker.StartWithCancel(&pb)

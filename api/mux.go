@@ -71,7 +71,12 @@ func launch(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[UNSUPPORTED_LAUNCH_TYPE] [%s]\n", launchType)
 		return
 	}
-	launches.Put(launchId, &launch)
+	launchIsAlreadyRunning := launches.PutIfAbsent(launchId, &launch)
+	if launchIsAlreadyRunning {
+		log.Printf("[LAUNCH_ALREADY_RUNNING] [%s]\n", launchId)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("Launch %s is already running", launchId)))
+	}
 	launchesQueue <- launchId
 }
 
