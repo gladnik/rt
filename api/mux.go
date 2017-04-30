@@ -76,6 +76,7 @@ func launch(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[LAUNCH_ALREADY_RUNNING] [%s]\n", launchId)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("Launch %s is already running", launchId)))
+		return
 	}
 	launchesQueue <- launchId
 }
