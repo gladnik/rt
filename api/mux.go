@@ -53,6 +53,7 @@ func ping(w http.ResponseWriter, _ *http.Request) {
 func launch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		log.Printf("[UNSUPPORTED_LAUNCH_METHOD] [%s]\n", r.Method)
 		return
 	}
 	var launch Launch
@@ -60,6 +61,7 @@ func launch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("A launch object is expected"))
+		log.Printf("[INVALID_LAUNCH_DATA] [%s]\n", r.Method)
 		return
 	}
 
@@ -79,11 +81,13 @@ func launch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	launchesQueue <- launchId
+	log.Printf("[LAUNCH_REQUESTED] [%s]\n", launchId)
 }
 
 func terminate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		log.Printf("[UNSUPPORTED_TERMINATE_METHOD] [%s]\n", r.Method)
 		return
 	}
 	var uuids []string
@@ -91,9 +95,11 @@ func terminate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("An array or test case IDs is expected"))
+		log.Printf("[INVALID_TERMINATE_DATA] [%s]\n", r.Method)
 		return
 	}
 	for _, uuid := range uuids {
+		log.Printf("[TERMINATE_REQUESTED] [%s]\n", uuid)
 		terminateQueue <- uuid
 	}
 }
