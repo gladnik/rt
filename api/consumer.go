@@ -135,13 +135,16 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 				_, testCaseIsAlreadyRunning := testCases.Get(testCaseId)
 				if testCaseIsAlreadyRunning {
 					log.Printf("[TEST_CASE_ALREADY_RUNNING] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+					wg.Done()
 					return
 				}
 				start := time.Now()
 				log.Printf("[LAUNCHING] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
 				cancel, finished, err := docker.StartWithCancel(&pb)
 				if err != nil {
+					eventBus.Fire(event.TestCaseNotStarted, testCaseId)
 					log.Printf("[FAILED_TO_LAUNCH] [%s] [%s] [%s] %v\n", launchId, containerType, testCaseId, err)
+					wg.Done()
 					return
 				}
 				rtc := &RunningTestCase{

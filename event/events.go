@@ -20,13 +20,14 @@ func (eb *EventBus) Fire(eventType string, id string) {
 
 // Events
 const (
-	LaunchStarted    = "launch_started"
-	LaunchFinished   = "launch_finished"
-	TestCaseStarted  = "test_case_started"
-	TestCasePassed   = "test_case_finished"
-	TestCaseFailed   = "test_case_failed"
-	TestCaseRevoked  = "test_case_revoked"
-	TestCaseTimedOut = "test_case_timed_out"
+	LaunchStarted      = "launch_started"
+	LaunchFinished     = "launch_finished"
+	TestCaseStarted    = "test_case_started"
+	TestCaseNotStarted = "test_case_not_started"
+	TestCasePassed     = "test_case_finished"
+	TestCaseFailed     = "test_case_failed"
+	TestCaseRevoked    = "test_case_revoked"
+	TestCaseTimedOut   = "test_case_timed_out"
 )
 
 type Event struct {
