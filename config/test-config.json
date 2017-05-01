@@ -6,7 +6,7 @@
       "/tmp": "size=128m"
     },
     "templates": {
-      "pom.xml.tmpl": "pom.xml"
+      "/pom.xml.tmpl": "/data/pom.xml"
     },
     "volumes": [
       "/root/.m2:/root/.m2"
