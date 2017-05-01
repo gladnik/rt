@@ -111,15 +111,27 @@ func generateBuildFiles(templates map[string]string, buildData StandaloneTestCas
 }
 
 func execTests(dataDir string, testCaseName string) {
-	testsCmd, _ := execCommand(os.Args[1], os.Args[2:]...)
-	stdout, err := testsCmd.StdoutPipe()
+	cmd := exec.Command(os.Args[1], os.Args[2:]...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
 	}
-	stderr, err := testsCmd.StderrPipe()
+	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+	pid, err := syscall.Getpgid(cmd.Process.Pid)
+	if err != nil {
+		log.Fatal(err)
+	}
+	runningCommands = append(runningCommands, pid)
+	
 	logFile := path.Join(dataDir, fmt.Sprintf("LOG-%s.log", testCaseName))
 	f, err := os.Create(logFile)
 	if err != nil {
@@ -129,27 +141,11 @@ func execTests(dataDir string, testCaseName string) {
 	teeWriter := io.MultiWriter(os.Stdout, bufio.NewWriter(f))
 	go io.Copy(teeWriter, stdout)
 	go io.Copy(teeWriter, stderr)
-	go func() {
-		testsCmdError := testsCmd.Wait()
-		if testsCmdError == nil {
-			os.Exit(completedCode)
-		} else {
-			os.Exit(failedCode)
-		}
-	}()
-}
-
-func execCommand(name string, arg ...string) (*exec.Cmd, int) {
-	cmd := exec.Command(name, arg...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	err := cmd.Start()
-	if err != nil {
-		log.Fatal(err)
+	
+	testsCmdError := cmd.Wait()
+	if testsCmdError == nil {
+		os.Exit(completedCode)
+	} else {
+		os.Exit(failedCode)
 	}
-	pid, err := syscall.Getpgid(cmd.Process.Pid)
-	if err != nil {
-		log.Fatal(err)
-	}
-	runningCommands = append(runningCommands, pid)
-	return cmd, pid
 }
