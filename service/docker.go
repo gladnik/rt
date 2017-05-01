@@ -83,7 +83,7 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 		docker.removeContainer(ctx, containerId, bs)
 		return nil, nil, fmt.Errorf("failed to start container: %v", err)
 	}
-	log.Printf("[%d] [CONTAINER_STARTED] [%s] [%s] [%s] [%v]\n", requestId, testCaseId, image, containerId, time.Since(containerStartTime))
+	log.Printf("[%d] [CONTAINER_STARTED] [%s] [%s] [%s] [%.2fs]\n", requestId, testCaseId, image, containerId, float64(time.Since(containerStartTime).Seconds()))
 	return func() { docker.removeContainer(ctx, containerId, bs) }, finished, nil
 }
 
@@ -106,11 +106,12 @@ func (docker *Docker) removeContainer(ctx context.Context, containerId string, b
 	requestId := bs.RequestId
 	testCaseId := bs.BuildData.TestCase.Id
 	image := bs.Image
+	containerRemoveTime := time.Now()
 	log.Printf("[%d] [REMOVING_CONTAINER] [%s] [%s] [%s]\n", requestId, testCaseId, image, containerId)
 	err := docker.client.ContainerRemove(ctx, containerId, types.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
 	if err != nil {
 		log.Println("error: unable to remove container", containerId, err)
 		return
 	}
-	log.Printf("[%d] [CONTAINER_REMOVED] [%s] [%s] [%s]\n", requestId, testCaseId, image, containerId)
+	log.Printf("[%d] [CONTAINER_REMOVED] [%s] [%s] [%s] [%.2fs]\n", requestId, testCaseId, image, containerId, float64(time.Since(containerRemoveTime).Seconds()))
 }

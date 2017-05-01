@@ -132,7 +132,8 @@ func launchImpl(requestId RequestId, config *config.Config, docker *service.Dock
 		parallelBuilds := GetParallelBuilds(container, launch)
 		wg := sync.WaitGroup{}
 		wg.Add(len(parallelBuilds))
-		for testCaseId, pb := range parallelBuilds {
+		for testCaseId, bs := range parallelBuilds {
+			bs.RequestId = requestId
 			go func() {
 				_, testCaseIsAlreadyRunning := testCases.Get(testCaseId)
 				if testCaseIsAlreadyRunning {
@@ -142,7 +143,7 @@ func launchImpl(requestId RequestId, config *config.Config, docker *service.Dock
 				}
 				start := time.Now()
 				log.Printf("[%d] [LAUNCHING] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
-				cancel, finished, err := docker.StartWithCancel(&pb)
+				cancel, finished, err := docker.StartWithCancel(&bs)
 				if err != nil {
 					eventBus.Fire(event.TestCaseNotStarted, testCaseId)
 					log.Printf("[%d] [FAILED_TO_LAUNCH] [%s] [%s] [%s] %v\n", requestId, launchId, containerType, testCaseId, err)
