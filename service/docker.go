@@ -59,7 +59,6 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 			Cmd:      bs.Command,
 		},
 		&container.HostConfig{
-			AutoRemove: true,
 			Binds:      volumes,
 			LogConfig:  *docker.logConfig,
 			Tmpfs:      bs.Tmpfs,
@@ -77,13 +76,13 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 	containerStartTime := time.Now()
 	log.Printf("[%d] [STARTING_CONTAINER] [%s] [%s]\n", requestId, testCaseId, image) 
 	err = docker.client.ContainerStart(ctx, containerId, types.ContainerStartOptions{})
-	finished := make(chan bool)
-	go docker.waitFor(ctx, containerId, finished)
 	if err != nil {
 		docker.removeContainer(ctx, containerId, bs)
 		return nil, nil, fmt.Errorf("failed to start container: %v", err)
 	}
 	log.Printf("[%d] [CONTAINER_STARTED] [%s] [%s] [%s] [%.2fs]\n", requestId, testCaseId, image, containerId, float64(time.Since(containerStartTime).Seconds()))
+	finished := make(chan bool)
+	go docker.waitFor(ctx, containerId, finished)
 	return func() { docker.removeContainer(ctx, containerId, bs) }, finished, nil
 }
 
