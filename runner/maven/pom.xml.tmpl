@@ -36,7 +36,7 @@
                         </property>
                     </properties>
                     <dependenciesToScan>
-                        <dependency>{{- .TestCase.Artifact.GroupId -}}:{{- .TestCase.Artifact.ArtifactId -}}</dependency>
+                        <dependency>{{- .TestCase.Artifact.GroupId -}}:{{- .TestCase.Artifact.Id -}}</dependency>
                     </dependenciesToScan>
                     <disableXmlReport>true</disableXmlReport>
                     {{- if .Properties }}
@@ -109,7 +109,7 @@
     <dependencies>
         <dependency>
             <groupId>{{- .TestCase.Artifact.GroupId -}}</groupId>
-            <artifactId>{{- .TestCase.Artifact.ArtifactId -}}</artifactId>
+            <artifactId>{{- .TestCase.Artifact.Id -}}</artifactId>
             <version>{{- .TestCase.Artifact.Version -}}</version>
             <scope>test</scope>
         </dependency>
