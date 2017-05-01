@@ -169,6 +169,7 @@ func launchImpl(requestId RequestId, config *config.Config, docker *service.Dock
 							eventBus.Fire(event.TestCaseFailed, testCaseId)
 							log.Printf("[%d] [FAILED] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
 						}
+						cancel()
 					}
 
 				case <-rtc.Terminated:
