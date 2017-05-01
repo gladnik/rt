@@ -92,7 +92,7 @@ func chDir(dir string) error {
 }
 
 func generateBuildFiles(templates map[string]string, buildData StandaloneTestCase) error {
-	for outputFile, tpl := range templates {
+	for tpl, outputFile := range templates {
 		t, err := template.ParseFiles(tpl)
 		if err != nil {
 			return fmt.Errorf("failed to parse template file \"%s\": %v", tpl, err)
