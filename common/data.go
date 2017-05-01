@@ -1,5 +1,8 @@
 package common
 
+// Request counter
+type RequestId uint64
+
 // Includes flags, tests in parallel
 type Property struct {
 	Key   string `json:"key"`

@@ -95,12 +95,14 @@ func ConsumeLaunches(config *config.Config, exit chan bool) {
 		case <-exit:
 			waitForTestCasesToFinish(config)
 			return
-		case launchId := <-launchesQueue:
+		case launchRequest := <-launchesQueue:
 			{
+				requestId := launchRequest.RequestId
+				launchId := launchRequest.Id
 				if launch, ok := launches.Get(launchId); ok {
-					go launchImpl(config, docker, launch)
+					go launchImpl(requestId, config, docker, launch)
 				} else {
-					log.Printf("[MISSING_LAUNCH] [%s]\n", launchId)
+					log.Printf("[%d] [MISSING_LAUNCH] [%s]\n", requestId, launchId)
 				}
 			}
 		}
@@ -121,11 +123,11 @@ func waitForTestCasesToFinish(config *config.Config) {
 	})
 }
 
-func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
+func launchImpl(requestId RequestId, config *config.Config, docker *service.Docker, launch *Launch) {
 	containerType := launch.Type
 	launchId := launch.Id
 	eventBus.Fire(event.LaunchStarted, launchId)
-	log.Printf("[LAUNCH_STARTED] [%s] [%s]\n", launchId, containerType)
+	log.Printf("[%d] [LAUNCH_STARTED] [%s] [%s]\n", requestId, launchId, containerType)
 	if container, ok := config.GetContainer(containerType); ok {
 		parallelBuilds := GetParallelBuilds(container, launch)
 		wg := sync.WaitGroup{}
@@ -134,16 +136,16 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 			go func() {
 				_, testCaseIsAlreadyRunning := testCases.Get(testCaseId)
 				if testCaseIsAlreadyRunning {
-					log.Printf("[TEST_CASE_ALREADY_RUNNING] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+					log.Printf("[%d] [TEST_CASE_ALREADY_RUNNING] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
 					wg.Done()
 					return
 				}
 				start := time.Now()
-				log.Printf("[LAUNCHING] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+				log.Printf("[%d] [LAUNCHING] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
 				cancel, finished, err := docker.StartWithCancel(&pb)
 				if err != nil {
 					eventBus.Fire(event.TestCaseNotStarted, testCaseId)
-					log.Printf("[FAILED_TO_LAUNCH] [%s] [%s] [%s] %v\n", launchId, containerType, testCaseId, err)
+					log.Printf("[%d] [FAILED_TO_LAUNCH] [%s] [%s] [%s] %v\n", requestId, launchId, containerType, testCaseId, err)
 					wg.Done()
 					return
 				}
@@ -155,30 +157,30 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 				testCases.Put(testCaseId, rtc)
 				duration := float64(time.Now().Sub(start).Seconds())
 				eventBus.Fire(event.TestCaseStarted, testCaseId)
-				log.Printf("[LAUNCHED] [%s] [%s] [%s] [%.2fs]\n", launchId, containerType, testCaseId, duration)
+				log.Printf("[%d] [LAUNCHED] [%s] [%s] [%s] [%.2fs]\n", requestId, launchId, containerType, testCaseId, duration)
 				select {
 				case success := <-rtc.Finished:
 					{
 						if success {
 							eventBus.Fire(event.TestCasePassed, testCaseId)
-							log.Printf("[PASSED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+							log.Printf("[%d] [PASSED] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
 						} else {
 							eventBus.Fire(event.TestCaseFailed, testCaseId)
-							log.Printf("[FAILED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+							log.Printf("[%d] [FAILED] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
 						}
 					}
 
 				case <-rtc.Terminated:
 					{
 						eventBus.Fire(event.TestCaseRevoked, testCaseId)
-						log.Printf("[TERMINATED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+						log.Printf("[%d] [TERMINATED] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
 					}
 				case <-time.After(config.Timeout):
 					{
-						log.Printf("[TIMED_OUT] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
-						terminateImpl(testCaseId)
+						log.Printf("[%d] [TIMED_OUT] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
+						terminateImpl(requestId, testCaseId)
 						eventBus.Fire(event.TestCaseTimedOut, testCaseId)
-						log.Printf("[TERMINATED] [%s] [%s] [%s]\n", launchId, containerType, testCaseId)
+						log.Printf("[%d] [TERMINATED] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
 					}
 				}
 				testCases.Delete(testCaseId)
@@ -188,9 +190,9 @@ func launchImpl(config *config.Config, docker *service.Docker, launch *Launch) {
 		wg.Wait()
 		launches.Delete(launchId)
 		eventBus.Fire(event.LaunchFinished, launchId)
-		log.Printf("[LAUNCH_FINISHED] [%s] [%s]\n", launchId, containerType)
+		log.Printf("[%d] [LAUNCH_FINISHED] [%s] [%s]\n", requestId, launchId, containerType)
 	} else {
-		log.Printf("[UNSUPPORTED_CONTAINER_TYPE] [%s] [%s]\n", launchId, containerType)
+		log.Printf("[%d] [UNSUPPORTED_CONTAINER_TYPE] [%s] [%s]\n", requestId, launchId, containerType)
 	}
 }
 
@@ -199,17 +201,19 @@ func ConsumeTerminates(exit chan bool) {
 		select {
 		case <-exit:
 			return
-		case testCaseId := <-terminateQueue:
+		case terminateRequest := <-terminateQueue:
 			{
-				go terminateImpl(testCaseId)
+				requestId := terminateRequest.RequestId
+				testCaseId := terminateRequest.Id
+				go terminateImpl(requestId, testCaseId)
 			}
 		}
 	}
 }
 
-func terminateImpl(testCaseId string) {
+func terminateImpl(requestId RequestId, testCaseId string) {
 	if runningTestCase, ok := testCases.Get(testCaseId); ok {
-		log.Printf("[TERMINATING] [%s]\n", testCaseId)
+		log.Printf("[%d] [TERMINATING] [%s]\n", requestId, testCaseId)
 		runningTestCase.Cancel()
 		close(runningTestCase.Terminated)
 	}

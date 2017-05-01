@@ -28,7 +28,6 @@ func GetParallelBuilds(container *config.Container, launch *Launch) map[string]s
 	ret := make(map[string]service.BuildSettings)
 	tool, ok := supportedTools[launch.Type]
 	if ok {
-		//TODO: could do this in parallel with goroutines...
 		for _, testCase := range launch.TestCases {
 			bs := service.BuildSettings{
 				Image:     container.Image,

@@ -16,9 +16,9 @@ import (
 )
 
 type Docker struct {
-	DataDir   string //Data directory on host machine
-	Client    *client.Client
-	LogConfig *container.LogConfig
+	dataDir   string //Data directory on host machine
+	client    *client.Client
+	logConfig *container.LogConfig
 }
 
 func NewDocker(config *config.Config) (*Docker, error) {
@@ -27,9 +27,9 @@ func NewDocker(config *config.Config) (*Docker, error) {
 		return nil, fmt.Errorf("failed to create Docker client: %v\n", err)
 	}
 	return &Docker{
-		DataDir:   config.DataDir,
-		Client:    cl,
-		LogConfig: config.LogConfig,
+		dataDir:   config.DataDir,
+		client:    cl,
+		logConfig: config.LogConfig,
 	}, nil
 }
 
@@ -49,9 +49,9 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 		fmt.Sprintf("%s=%s", Templates, rawTemplates),
 		fmt.Sprintf("%s=%s", BuildData, rawBuildData),
 	}
-	volumes := []string{fmt.Sprintf("%s:%s", path.Join(docker.DataDir, bs.BuildData.TestCase.Id), bs.DataDir)}
+	volumes := []string{fmt.Sprintf("%s:%s", path.Join(docker.dataDir, bs.BuildData.TestCase.Id), bs.DataDir)}
 	volumes = append(volumes, bs.Volumes...)
-	resp, err := docker.Client.ContainerCreate(ctx,
+	resp, err := docker.client.ContainerCreate(ctx,
 		&container.Config{
 			Hostname: "localhost",
 			Image:    bs.Image,
@@ -61,7 +61,7 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 		&container.HostConfig{
 			AutoRemove: true,
 			Binds:      volumes,
-			LogConfig:  *docker.LogConfig,
+			LogConfig:  *docker.logConfig,
 			Tmpfs:      bs.Tmpfs,
 			ShmSize:    268435456,
 			Privileged: true,
@@ -70,17 +70,21 @@ func (docker *Docker) StartWithCancel(bs *BuildSettings) (func(), <-chan bool, e
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create container: %v", err)
 	}
+	containerId := resp.ID
+	requestId := bs.RequestId
+	testCaseId := bs.BuildData.TestCase.Id
+	image := bs.Image
 	containerStartTime := time.Now()
-	log.Println("[STARTING_CONTAINER]")
-	err = docker.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+	log.Printf("[%d] [STARTING_CONTAINER] [%s] [%s]\n", requestId, testCaseId, image) 
+	err = docker.client.ContainerStart(ctx, containerId, types.ContainerStartOptions{})
 	finished := make(chan bool)
-	go docker.waitFor(ctx, resp.ID, finished)
+	go docker.waitFor(ctx, containerId, finished)
 	if err != nil {
-		docker.removeContainer(ctx, resp.ID)
+		docker.removeContainer(ctx, containerId, bs)
 		return nil, nil, fmt.Errorf("failed to start container: %v", err)
 	}
-	log.Printf("[CONTAINER_STARTED] [%s] [%v]\n", resp.ID, time.Since(containerStartTime))
-	return func() { docker.removeContainer(ctx, resp.ID) }, finished, nil
+	log.Printf("[%d] [CONTAINER_STARTED] [%s] [%s] [%s] [%v]\n", requestId, testCaseId, image, containerId, time.Since(containerStartTime))
+	return func() { docker.removeContainer(ctx, containerId, bs) }, finished, nil
 }
 
 func marshalData(m interface{}) (string, error) {
@@ -93,17 +97,20 @@ func marshalData(m interface{}) (string, error) {
 
 func (docker *Docker) waitFor(ctx context.Context, containerId string, finished chan bool) {
 	//TODO: does this automatically exit on container removal?
-	statusCode, err := docker.Client.ContainerWait(ctx, containerId)
+	statusCode, err := docker.client.ContainerWait(ctx, containerId)
 	success := err != nil && statusCode == 0
 	finished <- success
 }
 
-func (docker *Docker) removeContainer(ctx context.Context, containerId string) {
-	log.Printf("[REMOVING_CONTAINER] [%s]\n", containerId)
-	err := docker.Client.ContainerRemove(ctx, containerId, types.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
+func (docker *Docker) removeContainer(ctx context.Context, containerId string, bs *BuildSettings) {
+	requestId := bs.RequestId
+	testCaseId := bs.BuildData.TestCase.Id
+	image := bs.Image
+	log.Printf("[%d] [REMOVING_CONTAINER] [%s] [%s] [%s]\n", requestId, testCaseId, image, containerId)
+	err := docker.client.ContainerRemove(ctx, containerId, types.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
 	if err != nil {
 		log.Println("error: unable to remove container", containerId, err)
 		return
 	}
-	log.Printf("[CONTAINER_REMOVED] [%s]\n", containerId)
+	log.Printf("[%d] [CONTAINER_REMOVED] [%s] [%s] [%s]\n", requestId, testCaseId, image, containerId)
 }

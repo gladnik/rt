@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"sync"
 )
 
 /*
@@ -30,12 +31,20 @@ const (
 )
 
 var (
-	launchesQueue  = make(chan string)
-	terminateQueue = make(chan string)
+	launchesQueue  = make(chan IdentifiedRequest)
+	terminateQueue = make(chan IdentifiedRequest)
 	eventBus       = event.NewEventBus()
 	upgrader       = websocket.Upgrader{}
 	startTime      = time.Now()
+	
+	num      RequestId
+	numLock  sync.Mutex
 )
+
+type IdentifiedRequest struct {
+	RequestId RequestId
+	Id string
+}
 
 func Mux(exit chan bool) http.Handler {
 	mux := http.NewServeMux()
@@ -51,9 +60,10 @@ func ping(w http.ResponseWriter, _ *http.Request) {
 }
 
 func launch(w http.ResponseWriter, r *http.Request) {
+	requestId := serial()
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		log.Printf("[UNSUPPORTED_LAUNCH_METHOD] [%s]\n", r.Method)
+		log.Printf("[%d] [UNSUPPORTED_LAUNCH_METHOD] [%s]\n", requestId, r.Method)
 		return
 	}
 	var launch Launch
@@ -61,7 +71,7 @@ func launch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("A launch object is expected"))
-		log.Printf("[INVALID_LAUNCH_DATA] [%s]\n", r.Method)
+		log.Printf("[%d] [INVALID_LAUNCH_DATA] [%s]\n", requestId, r.Method)
 		return
 	}
 
@@ -70,24 +80,25 @@ func launch(w http.ResponseWriter, r *http.Request) {
 	if !IsToolSupported(launchType) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("Unsupported launch type: %s\n", launchType)))
-		log.Printf("[UNSUPPORTED_LAUNCH_TYPE] [%s]\n", launchType)
+		log.Printf("[%d] [UNSUPPORTED_LAUNCH_TYPE] [%s]\n", requestId, launchType)
 		return
 	}
 	launchIsAlreadyRunning := launches.PutIfAbsent(launchId, &launch)
 	if launchIsAlreadyRunning {
-		log.Printf("[LAUNCH_ALREADY_RUNNING] [%s]\n", launchId)
+		log.Printf("[%d] [LAUNCH_ALREADY_RUNNING] [%s]\n", requestId, launchId)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("Launch %s is already running", launchId)))
 		return
 	}
-	launchesQueue <- launchId
-	log.Printf("[LAUNCH_REQUESTED] [%s]\n", launchId)
+	launchesQueue <- IdentifiedRequest{RequestId: requestId, Id: launchId}
+	log.Printf("[%d] [LAUNCH_REQUESTED] [%s]\n", requestId, launchId)
 }
 
 func terminate(w http.ResponseWriter, r *http.Request) {
+	requestId := serial()
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		log.Printf("[UNSUPPORTED_TERMINATE_METHOD] [%s]\n", r.Method)
+		log.Printf("[%d] [UNSUPPORTED_TERMINATE_METHOD] [%s]\n", requestId, r.Method)
 		return
 	}
 	var uuids []string
@@ -95,12 +106,12 @@ func terminate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("An array of test case IDs is expected"))
-		log.Printf("[INVALID_TERMINATE_DATA] [%s]\n", r.Method)
+		log.Printf("[%d] [INVALID_TERMINATE_DATA]\n", requestId)
 		return
 	}
 	for _, uuid := range uuids {
-		log.Printf("[TERMINATE_REQUESTED] [%s]\n", uuid)
-		terminateQueue <- uuid
+		log.Printf("[%d] [TERMINATE_REQUESTED] [%s]\n", requestId, uuid)
+		terminateQueue <- IdentifiedRequest{RequestId: requestId, Id: uuid}
 	}
 }
 
@@ -132,4 +143,12 @@ func events(exit chan bool) func(http.ResponseWriter, *http.Request) {
 			}
 		}
 	}
+}
+
+func serial() RequestId {
+	numLock.Lock()
+	defer numLock.Unlock()
+	id := num
+	num++
+	return id
 }
