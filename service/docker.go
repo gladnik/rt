@@ -107,7 +107,7 @@ func (docker *Docker) removeContainer(ctx context.Context, containerId string, b
 	image := bs.Image
 	containerRemoveTime := time.Now()
 	log.Printf("[%d] [REMOVING_CONTAINER] [%s] [%s] [%s]\n", requestId, testCaseId, image, containerId)
-	err := docker.client.ContainerRemove(ctx, containerId, types.ContainerRemoveOptions{Force: true, RemoveVolumes: true})
+	err := docker.client.ContainerRemove(ctx, containerId, types.ContainerRemoveOptions{RemoveVolumes: true})
 	if err != nil {
 		log.Println("error: unable to remove container", containerId, err)
 		return
