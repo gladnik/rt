@@ -134,7 +134,7 @@ func launchImpl(requestId RequestId, config *config.Config, docker *service.Dock
 		wg.Add(len(parallelBuilds))
 		for testCaseId, bs := range parallelBuilds {
 			bs.RequestId = requestId
-			go func() {
+			go func(testCaseId string, bs service.BuildSettings) {
 				_, testCaseIsAlreadyRunning := testCases.Get(testCaseId)
 				if testCaseIsAlreadyRunning {
 					log.Printf("[%d] [TEST_CASE_ALREADY_RUNNING] [%s] [%s] [%s]\n", requestId, launchId, containerType, testCaseId)
@@ -187,7 +187,7 @@ func launchImpl(requestId RequestId, config *config.Config, docker *service.Dock
 				}
 				testCases.Delete(testCaseId)
 				wg.Done()
-			}()
+			}(testCaseId, bs)
 		}
 		wg.Wait()
 		launches.Delete(launchId)
