@@ -56,7 +56,9 @@ func Mux(exit chan bool) http.Handler {
 }
 
 func ping(w http.ResponseWriter, _ *http.Request) {
-	w.Write([]byte(fmt.Sprintf("{\"uptime\": \"%s\"}\n", time.Since(startTime))))
+	json.NewEncoder(w).Encode(struct {
+		Uptime         string `json:"uptime"`
+	}{time.Since(startTime).String()})
 }
 
 func launch(w http.ResponseWriter, r *http.Request) {
