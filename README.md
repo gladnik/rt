@@ -4,8 +4,9 @@ RT is a lightweight autotests runtime using [Docker](http://docker.com) to isola
 ## Test Launch
 1) Build container with Maven:
 ```
-$ cd runner
+$ pushd runner
 $ ./build-container.sh maven
+$ popd
 ```
 2) Create directory to store test results:
 ```
@@ -17,7 +18,7 @@ $ ./rt -conf config/test-config.json -data-dir ~/test-results
 ```
 4) Launch tests using predefined JSON:
 ```
-$ curl -vvv --data '@test-launch.json' http://localhost:8080/launch
+$ curl -vvv --data '@api/test-launch.json' http://localhost:8080/launch
 ```
 
 ## Building
