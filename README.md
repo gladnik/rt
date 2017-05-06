@@ -1,6 +1,25 @@
 # RT
 RT is a lightweight autotests runtime using [Docker](http://docker.com) to isolate test cases.
 
+## Test Launch
+1) Build container with Maven:
+```
+$ cd runner
+$ ./build-container.sh maven
+```
+2) Create directory to store test results:
+```
+$ mkdir ~/test-results
+```
+3) Start RT:
+```
+$ ./rt -conf config/test-config.json -data-dir ~/test-results
+```
+4) Launch tests using predefined JSON:
+```
+$ curl -vvv --data '@test-launch.json' http://localhost:8080/launch
+```
+
 ## Building
 
 1) Install [Golang](https://golang.org/doc/install)
